@@ -1,0 +1,4 @@
+settings = {
+    apikey: "YOUR_KEY_HERE",
+    url: "http://localhost"
+}
