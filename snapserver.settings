@@ -1,4 +1,5 @@
 settings = {
-    apikey: "YOUR_KEY_HERE",
-    url: "http://localhost"
+    apikey: "YOUR_API_KEY",
+    url: "YOUR_SERVER_ADDRESS",
+    senderid: "YOUR_SENDER_ID"
 }
