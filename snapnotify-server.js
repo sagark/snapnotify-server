@@ -1,6 +1,3 @@
-//@author Sagar Karandikar <apps@sagark.org>
-//@website http://sagark.org/snapnotify/
-//@about Node.js Server for SnapNotify
 var http = require('http');
 var gcm = require('node-gcm');
 var fs = require('fs');

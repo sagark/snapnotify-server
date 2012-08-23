@@ -1,6 +1,5 @@
 settings = {
     apikey: "YOUR_API_KEY",
     url: "YOUR_SERVER_ADDRESS",
-    senderid: "YOUR_SENDER_ID",
-    heroku: true
+    senderid: "YOUR_SENDER_ID"
 }
