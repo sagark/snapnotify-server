@@ -1,3 +1,7 @@
+//@author Sagar Karandikar
+//@web    http://sagark.org/snapnotify/
+//@about  Node.js server for SnapNotify
+
 var http = require('http');
 var gcm = require('node-gcm');
 var fs = require('fs');
@@ -5,19 +9,51 @@ var fs = require('fs');
 //load settings from file, store it to a settings object
 eval(fs.readFileSync('snapserver.settings', encoding="ascii"));
 
-var message = new gcm.Message();
-var sender = new gcm.Sender(settings.apikey);
+//common vars
 var registrationIds = [];
-var port = process.env.PORT || 1337; //get PORT for heroku else use 1337
 var url = settings.url; //find a way to get this for heroku?
-var urlport = url + ":" + port;
 var storedreg = "";
 
+//liveness checker for heroku (prevent idle)
+function liveness(){
+    //here, we want to post to ourselves to prevent heroku idle
+    var opts = {
+        host: url,
+        port: 80,
+        path: '/liveness',
+        method: 'POST'
+    };
+    var req = http.request(opts, function(res) {
+        //do nothing
+    });
+    req.on('error', function(e) {
+        console.log('problem with request: ' + e.message);
+    });
+    req.end();
+}
+
+if (settings.heroku){
+    console.log('running in heroku mode');
+    var port = process.env.PORT;
+    console.log("started liveness checker for heroku");
+    setInterval(liveness, 60*20*1000); //keep server alive on heroku
+} else {
+    console.log('running in "Own Server" mode');
+    var port = 1337;
+    console.log('not starting liveness checker');
+}
+
+//more common vars
+var urlport = url + ":" + port;
 
 //load from file and populate registrationIds
+/* NOTE: if you want to use this with heroku, you'll need to git add
+the registration_store file (populated with your device ids), since heroku 
+operates with a read-only filesystem */
 fs.readFile('registration_store', 'ascii', function(err, data){
     if(err) {
         console.log("no registration file found");
+        console.log("if you're running on heroku, see the note about loading from file in snapnotify-server.js");
     } else {
         storedreg = data;
         storedreg = storedreg.split(",");
@@ -88,12 +124,17 @@ http.createServer(function (req, res) {
                     console.log(content);
 
                     //create gcm message
+                    var message = new gcm.Message();
+                    var sender = new gcm.Sender(settings.apikey);
+
+                    //add title/content to message
                     message.addData('title', title);
                     message.addData('content', content);
                     message.collapseKey = 'demo';
                     message.delayWhileIdle = true;
                     message.timeToLive = 3;
 
+                    //send the message
                     sender.send(message, registrationIds, 4, function (result) {
                         console.log(result);
                     });
@@ -105,6 +146,15 @@ http.createServer(function (req, res) {
         case '/setup':
             res.writeHead(200, "OK", {'Content-Type': 'text/html'});
             res.end("Currently just filler, will eventually show a qrcode for easy config.");
+            break;
+        case '/liveness':
+            if (req.method == 'POST') {
+                console.log('server alive');
+                req.on('end', function() {
+                    res.writeHead(200, "OK", {'Content-Type': 'text/html'});
+                    res.end();
+                });
+            }
             break;
     };
 }).listen(port, '0.0.0.0');
